@@ -37,13 +37,16 @@ target = 9
 max_loss = -8
 vol_decimal = .4
 
+# 1:50:21
 
+# TODO: pull in ask and bid
+# TODO: pull in df sma - has all the data we need
+# TODO: pull in open positions
 # TODO: Add support/resist to functions
-# TODO: Pull in data: 1:50:21
+# TODO: Pull in data:
 # TODO: Calculate support & resistance based on close
 # TODO: Calculate retest where we put orders
+# TODO: pull in pnl close
+# TODO: pull in sleep on close
+# TODO: pull in kill switch
 # TODO: Run bot
-
-
-
-
