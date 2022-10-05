@@ -23,6 +23,10 @@ kucoin = ccxt.kucoinfutures({
 symbol = 'XBTUSDTM'
 index_pos = 0 # Change based on what asset
 
+pos_size = 10 # 125, 75,
+target = 9 # % gain I want
+max_loss = -8
+
 # Time between trades
 pause_time = 10
 
@@ -31,15 +35,16 @@ pause_time = 10
 vol_repeat = 11
 vol_time = 5
 
-pos_size = 10 # 125, 75,
+
 params = {'timeInForce': 'PostOnly'}
-target = 9
-max_loss = -8
 vol_decimal = .4
 
 # 1:50:21
 
 # TODO: pull in ask and bid
+ask, bid = f.ask_bid()
+print(f'For {symbol}... ask: {ask} | bid: {bid}')
+
 # TODO: pull in df sma - has all the data we need
 # TODO: pull in open positions
 # TODO: Add support/resist to functions
