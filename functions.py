@@ -62,7 +62,7 @@ def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     df_sma(symbol, timeframe, limit, sma): if no argument, uses defaults
     Returns: df_sma
     '''
-    print('starting...')
+    print('starting DataFrame SMA...')
     bars = kucoin.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
 
     df_sma = pd.DataFrame(bars, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])

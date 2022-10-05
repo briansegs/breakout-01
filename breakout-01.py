@@ -45,7 +45,9 @@ vol_decimal = .4
 ask, bid = f.ask_bid()
 print(f'For {symbol}... ask: {ask} | bid: {bid}')
 
-# TODO: pull in df sma - has all the data we need
+# TODO: pull in df sma - has all the data we need 1:59:44
+df_sma = f.df_sma(symbol, '15m', 200, 20)
+
 # TODO: pull in open positions
 # TODO: Add support/resist to functions
 # TODO: Pull in data:
