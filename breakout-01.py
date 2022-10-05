@@ -49,6 +49,8 @@ print(f'For {symbol}... ask: {ask} | bid: {bid}')
 df_sma = f.df_sma(symbol, '15m', 200, 20)
 
 # TODO: pull in open positions
+open_pos = f.open_positions(symbol)
+
 # TODO: Add support/resist to functions
 # TODO: Pull in data:
 # TODO: Calculate support & resistance based on close
