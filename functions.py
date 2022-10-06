@@ -194,6 +194,12 @@ def kill_switch(symbol=symbol):
 
         is_open = position_data(symbol)[1]
 
+closed_orders = kucoin.fetch_closed_orders(symbol)
+xtx = closed_orders[0]['info']['orderTime']
+xtx = int(xtx)
+xtx = round((xtx/1000000000))
+print(xtx)
+
 # 50:00
 # sleep_on_close:
 #   - pulls closed orders
@@ -201,15 +207,20 @@ def kill_switch(symbol=symbol):
 #   - sincelasttrade = minutes since last trade
 #   - puase in mins
 def sleep_on_close(symbol=symbol, pause_time=pause_time):
+    '''
+    Pulls closed orders.
+    If last close was in last 59min then sleep for 1min.
+    sleep_on_close(symbol, pause_time): if no argument, uses defaults
+    '''
     closed_orders = kucoin.fetch_closed_orders(symbol)
     #print(closed_orders)
 
     for ord in closed_orders[-1::-1]:
-        sincelasttrade = pause_time - 1 # how long we pause
+        sincelasttrade = pause_time - 1 # how long we pause in min
 
         filled = False
 
-        status = ord['info']['ordStatus']
+        status = ord['info']['status']
         txttime = ord['info']['transactTimes']
         txttime = int(txttime)
         txttime = round((txttime/1000000000)) # bc in nanoseconds
