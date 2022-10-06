@@ -1,5 +1,3 @@
-from operator import index
-from pickle import TRUE
 import ccxt
 import json
 import pandas as pd
@@ -320,6 +318,14 @@ def ob(symbol=symbol, vol_repeat=vol_repeat, vol_time=vol_time):
 
         return vol_under_dec
 
+
+# For Testing:
+# positions = kucoin.fetch_positions()
+# index = open_positions(symbol)[4]
+# position = positions[index]
+# current_price = ask_bid(symbol)[1]
+# print(index)
+
 # 1:13:40
 # pnl_close() [0] pnlclose and [1] in_pos [2]size [3]long TF
 # Notes:
@@ -328,16 +334,14 @@ def ob(symbol=symbol, vol_repeat=vol_repeat, vol_time=vol_time):
 def pnl_close(symbol=symbol):
     print(f'checking to see if its time to exit for {symbol}...')
 
-    params = {'type': 'swap', 'code': 'USD'}
-    pos_dict = kucoin.fetch_positions(params=params)
-    #print(pos_dict)
+    positions = kucoin.fetch_positions()
 
-    index_pos = open_positions(symbol)[4]
-    pos_dict = pos_dict[index_pos] # btc [3 ] [0] = doge, [1] ape
-    side = pos_dict['side']
-    size = pos_dict['contracts']
-    entry_price = float(pos_dict['entryPrice'])
-    leverage = float(pos_dict['leverage'])
+    index = open_positions(symbol)[4]
+    position = positions[index]
+    side = position['side']
+    size = position['contractSize']
+    entry_price = float(position['entryPrice'])
+    leverage = float(position['leverage'])
 
     current_price = ask_bid(symbol)[1]
 
@@ -352,23 +356,23 @@ def pnl_close(symbol=symbol):
         long = False
 
     try:
-        perc = round(((diff/entry_price) *  leverage), 10)
+        perc = round(((diff/entry_price) * leverage), 10)
     except:
         perc = 0
 
-    perc = 100 * perc
-    print(f'for {symbol} this is our PNL percentage: {(perc)}%')
+    percent = 100 * perc
+    print(f'for {symbol} this is our PNL percentage: {(percent)}%')
 
     pnlclose = False
     in_pos = False
 
-    if perc > 0:
+    if percent > 0:
         in_pos = True
         print(f'for {symbol} we are in a winning position')
-        if perc > target:
-            print(':) :) we are in profit & hit target.. checking volume to see if we ')
+        if percent > target:
+            print(':) :) we are in profit & hit target.. checking volume to see if we should close')
             pnlclose = True
-            vol_under_dec == obj(symbol) # return TF
+            vol_under_dec = ob(symbol) # return TF
             if vol_under_dec == True:
                 print(f'volume is under the decimal threshold we set of {vol_decimal}')
                 time.sleep(30)
@@ -377,21 +381,20 @@ def pnl_close(symbol=symbol):
                 #kill_switch()
         else:
             print('we have not hit our target yet')
-    elif perc < 0: # -10, -20
+    elif percent < 0: # -10, -20
         in_pos = True
 
-        if perc <= max_loss: # under -55, -56
-            print(f'we need to exit now down {perc}... so starting the kill switch..')
+        if percent <= max_loss: # under -55, -56
+            print(f'we need to exit now down {percent}... so starting the kill switch..')
             #kill_switch()
         else:
-            print(f'we are in a losing position of {perc}.. but chillen cause max loss')
+            print(f'we are in a losing position of {percent}.. but chillen cause max loss')
     else:
         print('we are not in position')
 
     if in_pos == True:
         #if breaks over .8% over 15m sma, then close pos (STOP LOSS)
 
-        #pull in 15m sma
         timeframe = '15m'
         df_f = df_sma(symbol, timeframe, 100, 20)
         print(df_f)
