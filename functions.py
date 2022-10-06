@@ -37,7 +37,7 @@ vol_time = 5
 
 
 # Support functions:
-def creat_dataframe(symbol, timeframe, limit):
+def create_dataframe(symbol, timeframe, limit):
     '''
     Supports: df_sma()
     '''
@@ -128,7 +128,7 @@ def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     Returns: df_sma
     '''
     print('Creating Dataframe...')
-    dataframe = creat_dataframe(symbol, timeframe, limit)
+    dataframe = create_dataframe(symbol, timeframe, limit)
 
     print('Adding SMA to Dataframe...')
     df_sma = add_sma_to_dataframe(dataframe, sma, timeframe)
