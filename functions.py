@@ -36,24 +36,6 @@ vol_repeat = 11
 vol_time = 5
 
 
-
-
-
-def ask_bid(symbol=symbol):
-    '''
-    Ask bid:
-    ask_bid(symbol): if no argument, uses defaults
-    Returns: ask, bid
-    '''
-    ob = kucoin.fetch_order_book(symbol)
-    bid = ob['bids'][0][0]
-    ask = ob['asks'][0][0]
-
-    print(f'ask_bid: symbol: {symbol} | ask: {ask} | bid: {bid}')
-    return ask, bid
-
-
-
 # Support functions:
 def creat_dataframe(symbol, timeframe, limit):
     '''
@@ -81,7 +63,64 @@ def add_sma_to_dataframe(dataframe, sma, timeframe):
 
     return dataframe
 
+def get_index(symbol):
+    '''
+    Supports: position_data() was open_positions()
+    '''
+    if symbol == 'XBTUSDTM':
+        index = 0
+    elif symbol == 'SOLUSDTM':
+        index = 1
+    else:
+        index = None
+    return index
+
+def get_open_long(position_side):
+    '''
+    Supports: position_data() was open_positions()
+    '''
+    if position_side == ('long'):
+        is_open = True
+        is_long = True
+    elif position_side == ('short'):
+        is_open = True
+        is_long = False
+    else:
+        is_open = False
+        is_long = None
+    return is_open, is_long
+
+def close_short(symbol, kill_size, bid, params):
+    '''
+    Supports: kill_switch()
+    '''
+    #kucoin.create_limit_buy_order(symbol, kill_size, bid, params)
+    print(f'just made a BUY to CLOSE order of {kill_size} {symbol} at ${bid}')
+    print(f'sleeping for 30 seconds to see of it fills..')
+
+def close_long(symbol, kill_size, ask, params):
+
+    '''
+    Supports: kill_switch()
+    '''
+    #kucoin.create_limit_sell_order(symbol, kill_size, ask, params)
+    print(f'just made a SELL to CLOSE order of {kill_size} {symbol} at ${ask}')
+    print('sleeping for 30 seconds to see of it fills..')
 # 6:16
+def ask_bid(symbol=symbol):
+    '''
+    Ask bid:
+    ask_bid(symbol): if no argument, uses defaults
+    Returns: ask, bid
+    '''
+    ob = kucoin.fetch_order_book(symbol)
+    bid = ob['bids'][0][0]
+    ask = ob['asks'][0][0]
+
+    print(f'ask_bid: symbol: {symbol} | ask: {ask} | bid: {bid}')
+    return ask, bid
+
+# 25:00
 def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     '''
     Creates a dataframe, appends sma and trade signal columns. Returns dataframe.
@@ -97,36 +136,6 @@ def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     print('Returning Dataframe...')
     print(df_sma)
     return df_sma
-
-
-# 25:00
-def get_index(symbol):
-    '''
-    Supports: open_positions()
-    '''
-    if symbol == 'XBTUSDTM':
-        index = 0
-    elif symbol == 'SOLUSDTM':
-        index = 1
-    else:
-        index = None
-    return index
-
-def get_open_long(position_side):
-    '''
-    Supports: open_positions()
-    '''
-    if position_side == ('long'):
-        is_open = True
-        is_long = True
-    elif position_side == ('short'):
-        is_open = True
-        is_long = False
-    else:
-        is_open = False
-        is_long = None
-    return is_open, is_long
-
 
 # TODO: make a function that loops through dictionary and assigns index to symbol
 # 43:00
@@ -149,44 +158,41 @@ def position_data(symbol=symbol):
 
 # 36:00
 # Notes:
-#   - kill_switch() needs open_positions() to work correctly
-# kill_switch: pass in (symbol) if no symbol uses default
+#   might need to play around with kill size to get limit orders to work
 def kill_switch(symbol=symbol):
-    print(f'starting the kill switch for {symbol}')
-    openposi = open_positions(symbol)[1] # true or false
-    long = open_positions(symbol)[3]# true or false
-    kill_size = open_positions(symbol)[2]# size of open position
+    '''
+    Runs a loop that cancels all orders and creates a
+    limit buy (if short) or sell (if long) order to take
+    you out of selected open position.
+    kill_switch(symbol): if no argument, uses defaults
+    '''
+    print(f'starting the kill switch for {symbol}:')
+    is_open = position_data(symbol)[1]
+    is_long = position_data(symbol)[3]
+    kill_size = position_data(symbol)[2]# size of open position
+    print(f'is_open: {is_open} | is_long: {is_long} | size: {kill_size}')
 
-    print(f'openposi {openposi}, long {long}, size {kill_size}')
-
-    while openposi == True:
-        print('starting kill switch loop til limit fil..')
-        temp_df = pd.DataFrame()
-        print('just made a temp df')
-
+    while is_open == True:
+        print('starting kill switch loop till limit fill..')
+        print('cancelling all orders...')
         #kucoin.cancel_all_orders(symbol)
-        openposi = open_positions(symbol)[1]
-        long = open_positions(symbol)[3]# true or false
-        kill_size = open_positions(symbol)[2]
+
+        is_open = position_data(symbol)[1]
+        is_long = position_data(symbol)[3]
+        kill_size = position_data(symbol)[2]
         kill_size = int(kill_size)
+        ask, bid = ask_bid(symbol)
 
-        ask = ask_bid(symbol)[0]
-        bid = ask_bid(symbol)[1]
-
-        if long == False:
-            #kucoin.create_limit_buy_order(symbol, kill_size, bid, params)
-            print(f'just made a BUY to CLOSE order of {kill_size} {symbol} at ${bid}')
-            print(f'sleeping for 30 seconds to see of it fills..')
+        if is_long == False:
+            close_short(symbol, kill_size, bid, params)
             time.sleep(30)
-        elif long == True:
-            #kucoin.create_limit_sell_order(symbol, kill_size, ask, params)
-            print(f'just made a SELL to CLOSE order of {kill_size} {symbol} at ${ask}')
-            print('sleeping for 30 seconds to see of it fills..')
+        elif is_long == True:
+            close_long(symbol, kill_size, ask, params)
             time.sleep(30)
         else:
             print('++++++ SOMETHING I DIDNT EXPECT IN KILL SWITCH FUNCTION')
 
-        openposi = open_positions(symbol)[1]
+        is_open = position_data(symbol)[1]
 
 # 50:00
 # sleep_on_close:
