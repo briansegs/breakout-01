@@ -32,7 +32,7 @@ pause_time = 60
 
 # For volume calc
 # vol_repeat * vol_time == TIME of volume collection
-vol_repeat = 11
+vol_repeat = 5
 vol_time = 5
 
 
@@ -99,13 +99,85 @@ def close_short(symbol, kill_size, bid, params):
     print(f'sleeping for 30 seconds to see of it fills..')
 
 def close_long(symbol, kill_size, ask, params):
-
     '''
     Supports: kill_switch()
     '''
     #kucoin.create_limit_sell_order(symbol, kill_size, ask, params)
     print(f'just made a SELL to CLOSE order of {kill_size} {symbol} at ${ask}')
     print('sleeping for 30 seconds to see of it fills..')
+
+def get_orderbook_asks_bids(symbol):
+    '''
+    Supports: ob()
+    '''
+    ob = kucoin.fetch_order_book(symbol)
+    bids = ob['bids']
+    asks = ob['asks']
+    first_bid = bids[0]
+    first_ask = asks[0]
+    return asks, bids
+
+def calc_sums(df, vol_time, vol_repeat):
+    '''
+    Supports: ob()
+    '''
+    total_bidvol = df['bid_vol'].sum()
+    total_askvol = df['ask_vol'].sum()
+    seconds = vol_time * vol_repeat
+    mins = round(seconds / 60, 2)
+
+    print(f'last {mins}mins for {symbol} this is total Bid Vol: {total_bidvol} | ask_vol: {total_askvol}')
+
+    if total_bidvol > total_askvol:
+        control_dec = (total_askvol/total_bidvol)
+        print(f'Bulls are in control: {control_dec}')
+        # if bulls are in control, use regular target
+        bullish = True
+    else:
+        control_dec = (total_bidvol / total_askvol)
+        print(f'Bears are in control: {control_dec}...')
+        bullish = False
+    return control_dec, bullish
+
+def get_ob_open_long(symbol):
+    '''
+    Supports: ob()
+    '''
+    position = position_data(symbol)
+    is_open = position[1]
+    is_long = position[3]
+    print(f'{symbol} open: {is_open} || long: {is_long}')
+    return is_open, is_long
+
+def is_vol_under_dec(is_long, is_open, control_dec, vol_decimal):
+    '''
+    Supports: ob()
+    '''
+    if is_open == True:
+        if is_long == True:
+            print('we are in a long position...')
+            if control_dec < vol_decimal: # vol_decimal set to .4 at top
+                vol_under_dec = True
+                #print('going to sleep for a minute.. cuz under vol decimal')
+                #time.sleep(6) # change to 60
+            else:
+                print('volume is not under dec so setting vol_under_dec to False')
+                vol_under_dec = False
+        else:
+            print('we are in a short position...')
+            if control_dec < vol_decimal: # vol_decimal set to .4 at top
+                vol_under_dec = True
+                #print('going to sleep for a minute.. cuz under vol decimal')
+                #time.sleep(6) # change to 60
+            else:
+                print('volume is under dec so setting vol_under_dec to False')
+                vol_under_dec = False
+    else:
+        print('we are not in position...')
+        vol_under_dec = None
+    return vol_under_dec
+
+
 # 6:16
 def ask_bid(symbol=symbol):
     '''
@@ -194,11 +266,12 @@ def kill_switch(symbol=symbol):
 
         is_open = position_data(symbol)[1]
 
-closed_orders = kucoin.fetch_closed_orders(symbol)
-xtx = closed_orders[0]['info']['orderTime']
-xtx = int(xtx)
-xtx = round((xtx/1000000000))
-print(xtx)
+# Testing: sleep on close
+# closed_orders = kucoin.fetch_closed_orders(symbol)
+# xtx = closed_orders[0]['info']['orderTime']
+# xtx = int(xtx)
+# xtx = round((xtx/1000000000))
+# print(xtx)
 
 # 50:00
 # sleep_on_close:
@@ -261,53 +334,35 @@ def sleep_on_close(symbol=symbol, pause_time=pause_time):
 # 59:13
 # orderbook:
 def ob(symbol=symbol, vol_repeat=vol_repeat, vol_time=vol_time):
+    '''
+    If sell vol > buy vol and profit target hit, exit.
+    Gets last 1min of volume.. and if sell > buy vol do x
+    ob(symbol, vol_repeat, vol_time): if no argument, uses defaults
+    Returns: vol_under_dec(bool)
+    '''
     print(f'fetching order book data for {symbol}...')
 
     df = pd.DataFrame()
     temp_df = pd.DataFrame()
-
-    ob = kucoin.fetch_order_book(symbol)
-    #print(ob)
-    bids = ob['bids']
-    asks = ob['asks']
-
-    first_bid = bids[0]
-    first_ask = asks[0]
-
+    asks, bids =  get_orderbook_asks_bids(symbol)
     bid_vol_list = []
     ask_vol_list = []
 
-    # If SELL vol > buy vol AND profit target hit, exit
-    # get last 1min of volume.. and if sell > buy vol do x
-# TODO:
-#   - make range a variable
     for x in range(vol_repeat):
-
         for set in bids:
-        #print(set)
             price = set[0]
             vol = set[1]
             bid_vol_list.append(vol)
-            #print(price)
-            #print(vol)
-
-            #print(bid_vol_list)
             sum_bidvol = sum(bid_vol_list)
-            #print(sum_bidvol)
             temp_df['bid_vol'] = [sum_bidvol]
 
         for set in asks:
-            #print(set)
             price = set[0] # [40000, 344]
             vol = set[1]
             ask_vol_list.append(vol)
-            #print(price)
-            #print(vol)
-
             sum_askvol = sum(ask_vol_list)
             temp_df['ask_vol'] = [sum_askvol]
 
-        #print(temp_df)
         time.sleep(vol_time) # change back to 5 later
         df = df.append(temp_df)
         print(df)
@@ -316,60 +371,19 @@ def ob(symbol=symbol, vol_repeat=vol_repeat, vol_time=vol_time):
         print(' ')
     print(f'done collecting volume data for bids and asks..')
     print('calculating the sums..')
-    total_bidvol = df['bid_vol'].sum()
-    total_askvol = df['ask_vol'].sum()
 
-    seconds = vol_time * vol_repeat
-    mins = round(seconds / 60, 2)
-    print(f'last {mins}mins for {symbol} this is total Bid Vol: {total_bidvol} | ask_vol: {total_askvol}')
+    # if target is hit, check book vol
+    # if bool vol is < .4.. stay in pos... sleep?
+    # need to check to see if long or short
 
-    if total_bidvol > total_askvol:
-        control_dec = (total_askvol/total_bidvol)
-        print(f'Bulls are in control: {control_dec}')
-        # if bulls are in control, use regular target
-        bullish = True
-    else:
-        control_dec = (total_bidvol / total_askvol)
-        print(f'Bears are in control: {control_dec}...')
-        bullish = False
+    control_dec, bullish = calc_sums(df, vol_time, vol_repeat)
+    is_open, is_long = get_ob_open_long(symbol)
+    vol_under_dec = is_vol_under_dec(is_long, is_open, control_dec, vol_decimal)
 
-        # open_positions() open_positions, openpos_bool, openpos_size, long
+    # when vol_under_dec == False AND target hit, then exit
+    print(f'vol_inder_dec: {vol_under_dec}')
 
-        open_posi = open_positions(symbol)
-        openpos_tf = open_posi[1]
-        long = open_posi[3]
-        print(f'openpos_tf: {openpos_tf} || long: {long}')
-
-        # if target is hit, check book vol
-        # if bool vol is < .4.. stay in pos... sleep?
-        # need to check to see if long or short
-
-        if openpos_tf == True:
-            if long == True:
-                print('we are in a long position...')
-                if control_dec < vol_decimal: # vol_decimal set to .4 at top
-                    vol_under_dec = True
-                    #print('going to sleep for a minute.. cuz under vol decimal')
-                    #time.sleep(6) # change to 60
-                else:
-                    print('volume is not under dec so setting vol_under_dec to False')
-                    vol_under_dec = False
-            else:
-                print('we are in a short position...')
-                if control_dec < vol_decimal: # vol_decimal set to .4 at top
-                    vol_under_dec = True
-                    #print('going to sleep for a minute.. cuz under vol decimal')
-                    #time.sleep(6) # change to 60
-                else:
-                    print('volume is under dec so setting vol_under_dec to False')
-                    vol_under_dec = False
-        else:
-            print('we are not in position...')
-            vol_under_dec = None
-        # when vol_under_dec == False AND target hit, then exit
-        print(vol_under_dec)
-
-        return vol_under_dec
+    return vol_under_dec
 
 
 # For Testing:
