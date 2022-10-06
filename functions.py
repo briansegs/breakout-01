@@ -49,32 +49,48 @@ def ask_bid(symbol=symbol):
     bid = ob['bids'][0][0]
     ask = ob['asks'][0][0]
 
-    print(f'This is the ask for {symbol}: {ask}')
-
+    print(f'ask_bid: symbol: {symbol} | ask: {ask} | bid: {bid}')
     return ask, bid
 
+
 # 6:16
-def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
-    '''
-    Dataframe SMA:
-    df_sma(symbol, timeframe, limit, sma): if no argument, uses defaults
-    Returns: df_sma
-    '''
-    print('starting DataFrame SMA...')
-    bars = kucoin.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+
+def creat_dataframe(symbol, timeframe, limit):
+    bars = kucoin.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=limit)
 
     df_sma = pd.DataFrame(bars, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
     df_sma['timestamp'] = pd.to_datetime(df_sma['timestamp'], unit='ms')
 
-    #Dataframe SMA
-    df_sma[f'sma{sma}_{timeframe}'] = df_sma.close.rolling(sma).mean()
+    return df_sma
 
+def add_sma_to_dataframe(dataframe, sma, timeframe):
     bid = ask_bid(symbol)[1]
-    df_sma.loc[df_sma[f'sma{sma}_{timeframe}']>bid, 'signal'] = 'SELL'
-    df_sma.loc[df_sma[f'sma{sma}_{timeframe}']<bid, 'signal'] = 'BUY'
+    title = f'sma{sma}_{timeframe}'
 
+    dataframe[title] = dataframe.close.rolling(sma).mean()
+    sma_value = dataframe[title]
+
+    dataframe.loc[sma_value > bid, 'signal'] = 'SELL'
+    dataframe.loc[sma_value < bid, 'signal'] = 'BUY'
+
+    return dataframe
+
+def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
+    '''
+    Creates a dataframe, appends sma and trade signal columns. Returns dataframe.
+    df_sma(symbol, timeframe, limit, sma): if no argument, uses defaults
+    Returns: df_sma
+    '''
+    print('Creating Dataframe...')
+    dataframe = creat_dataframe(symbol, timeframe, limit)
+
+    print('Adding SMA to Dataframe...')
+    df_sma = add_sma_to_dataframe(dataframe, sma, timeframe)
+
+    print('Returning Dataframe...')
     print(df_sma)
     return df_sma
+
 
 # 25:00
 # TODO: make a function that loops through dictionary and assigns index to symbol
