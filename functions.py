@@ -53,17 +53,23 @@ def ask_bid(symbol=symbol):
     return ask, bid
 
 
-# 6:16
 
+# Support functions:
 def creat_dataframe(symbol, timeframe, limit):
-    bars = kucoin.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=limit)
+    '''
+    Supports: df_sma()
+    '''
+    data = kucoin.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=limit)
 
-    df_sma = pd.DataFrame(bars, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+    df_sma = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
     df_sma['timestamp'] = pd.to_datetime(df_sma['timestamp'], unit='ms')
 
     return df_sma
 
 def add_sma_to_dataframe(dataframe, sma, timeframe):
+    '''
+    Supports: df_sma()
+    '''
     bid = ask_bid(symbol)[1]
     title = f'sma{sma}_{timeframe}'
 
@@ -75,6 +81,7 @@ def add_sma_to_dataframe(dataframe, sma, timeframe):
 
     return dataframe
 
+# 6:16
 def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     '''
     Creates a dataframe, appends sma and trade signal columns. Returns dataframe.
