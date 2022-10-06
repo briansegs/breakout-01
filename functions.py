@@ -100,39 +100,52 @@ def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
 
 
 # 25:00
-# TODO: make a function that loops through dictionary and assigns index to symbol
-def open_positions(symbol=symbol):
+def get_index(symbol):
     '''
-    Open positions:
-    open_positions(symbol): if no argument, uses defaults
-    Returns: open_positions, openpos_bool, openpos_size, long, index
+    Supports: open_positions()
     '''
-    # what is the position index for that symbol?
-    # 43:00
-
     if symbol == 'XBTUSDTM':
         index = 0
     elif symbol == 'SOLUSDTM':
         index = 1
     else:
         index = None
+    return index
 
-    open_positions = kucoin.fetch_positions()
-    position_side = open_positions[index]['side']
-    position_size = open_positions[index]['contractSize']
-
+def get_open_long(position_side):
+    '''
+    Supports: open_positions()
+    '''
     if position_side == ('long'):
-        openpos_bool = True
-        long = True
+        is_open = True
+        is_long = True
     elif position_side == ('short'):
-        openpos_bool = True
-        long = False
+        is_open = True
+        is_long = False
     else:
-        openpos_bool = False
-        long = None
+        is_open = False
+        is_long = None
+    return is_open, is_long
 
-    print(f'symbol: {symbol} | openpos_bool: {openpos_bool} | position size: {position_size} | long: {long}')
-    return open_positions, openpos_bool, position_size, long, index
+
+# TODO: make a function that loops through dictionary and assigns index to symbol
+# 43:00
+def position_data(symbol=symbol):
+    '''
+    Pulls, prints, and returns data for selected symbol.
+    position_data(symbol): if no argument, uses defaults
+    Returns: open_positions, is_open, position_size, is_long, index
+    '''
+    open_positions = kucoin.fetch_positions()
+    index = get_index(symbol)
+    position = open_positions[index]
+
+    position_side = position['side']
+    position_size = position['contractSize']
+    is_open, is_long = get_open_long(position_side)
+
+    print(f'symbol: {symbol} | is_open: {is_open} | position size: {position_size} | is_long: {is_long}')
+    return open_positions, is_open, position_size, is_long, index
 
 # 36:00
 # Notes:
