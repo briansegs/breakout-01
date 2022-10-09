@@ -275,6 +275,7 @@ def kill_switch(symbol=symbol):
 
 # 50:00
 # sleep_on_close:
+#   - needs more work...
 #   - pulls closed orders
 #   - if last close was in last 59min then sleep for 1min
 #   - sincelasttrade = minutes since last trade
@@ -387,11 +388,47 @@ def ob(symbol=symbol, vol_repeat=vol_repeat, vol_time=vol_time):
 
 
 # For Testing:
-# positions = kucoin.fetch_positions()
-# index = open_positions(symbol)[4]
-# position = positions[index]
-# current_price = ask_bid(symbol)[1]
-# print(index)
+def get_pnl_percent(symbol):
+    '''
+    Supports pnl_close()
+    '''
+    positions = kucoin.fetch_positions()
+    index = position_data(symbol)[4]
+    position = positions[index]
+    realized_pnl = position['info']['realisedPnl']
+
+    df = pd.DataFrame(position, columns = [
+        'symbol',
+        'side',
+        'entryPrice',
+        'liquidationPrice',
+        'markPrice',
+        'collateral',
+        'realisedPnl',
+        'unrealizedPnl',
+        'percentage',
+        'leverage',
+        'contractSize'
+        ], index=[0])
+
+    df['collateral'] =  round(df['collateral'], 2)
+    df['realisedPnl'] = realized_pnl
+    df['percentage'] = "{:.2%}".format(df['percentage'][0])
+
+    pnl_percent = df['percentage'][0]
+    size = df['contractSize'][0]
+    side = df['side'][0]
+
+    if side == 'long':
+        long = True
+    else:
+        long = False
+
+    print(df)
+
+    return pnl_percent, long, size
+
+# get_pnl_percent(symbol)
 
 # 1:13:40
 # pnl_close() [0] pnlclose and [1] in_pos [2]size [3]long TF
@@ -399,44 +436,20 @@ def ob(symbol=symbol, vol_repeat=vol_repeat, vol_time=vol_time):
 #   - Doesn't work with ccxt.kucoin
 #   - Try ccxt.kucoinfutures
 def pnl_close(symbol=symbol):
+    '''
+
+    '''
     print(f'checking to see if its time to exit for {symbol}...')
 
-    positions = kucoin.fetch_positions()
-
-    index = open_positions(symbol)[4]
-    position = positions[index]
-    side = position['side']
-    size = position['contractSize']
-    entry_price = float(position['entryPrice'])
-    leverage = float(position['leverage'])
-
-    current_price = ask_bid(symbol)[1]
-
-    print(f'side: {side} | entry_price: {entry_price} | lev: {leverage}')
-    # short or long
-
-    if side == 'long':
-        diff = current_price - entry_price
-        long = True
-    else:
-        diff = entry_price - current_price
-        long = False
-
-    try:
-        perc = round(((diff/entry_price) * leverage), 10)
-    except:
-        perc = 0
-
-    percent = 100 * perc
-    print(f'for {symbol} this is our PNL percentage: {(percent)}%')
+    pnl_percent, long, size = get_pnl_percent(symbol)
 
     pnlclose = False
     in_pos = False
 
-    if percent > 0:
+    if pnl_percent > 0:
         in_pos = True
         print(f'for {symbol} we are in a winning position')
-        if percent > target:
+        if pnl_percent > target:
             print(':) :) we are in profit & hit target.. checking volume to see if we should close')
             pnlclose = True
             vol_under_dec = ob(symbol) # return TF
@@ -448,14 +461,14 @@ def pnl_close(symbol=symbol):
                 #kill_switch()
         else:
             print('we have not hit our target yet')
-    elif percent < 0: # -10, -20
+    elif pnl_percent < 0: # -10, -20
         in_pos = True
 
-        if percent <= max_loss: # under -55, -56
-            print(f'we need to exit now down {percent}... so starting the kill switch..')
+        if pnl_percent <= max_loss: # under -55, -56
+            print(f'we need to exit now down {pnl_percent}... so starting the kill switch..')
             #kill_switch()
         else:
-            print(f'we are in a losing position of {percent}.. but chillen cause max loss')
+            print(f'we are in a losing position of {pnl_percent}.. but chillen cause max loss')
     else:
         print('we are not in position')
 
