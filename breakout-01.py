@@ -1,8 +1,12 @@
-# calc the last 3 days of data
-# find the resistance and support  on 15min
-# on retest place orders
-# 'XBTUSDTM'
-# 1:41:55
+'''
+calc the last 3 days of data
+15m * 3day
+96 15m periods in 1d, we want 3 day so 96 * 3 = 288 + 1 = 289
+find the resistance and support  on 15min
+on retest place orders
+'XBTUSDTM'
+1:41:55
+'''
 
 import ccxt
 import json
@@ -46,14 +50,21 @@ ask, bid = f.ask_bid()
 print(f'For {symbol}... ask: {ask} | bid: {bid}')
 
 # TODO: pull in df sma - has all the data we need - 1:59:44
-df_sma = f.df_sma(symbol, '15m', 200, 20)
+df_sma = f.df_sma(symbol, '15m', 193, 20) # 2d == 193, 3d == 289
 
 # TODO: pull in open positions
 open_pos = f.position_data(symbol)
 
 # TODO: Add support/resist to functions
 # TODO: Pull in data:
+
 # TODO: Calculate support & resistance based on close
+support = df_sma['close'].min()
+resis = df_sma['close'].max()
+print(f'support {support} | resis {resis}')
+
+time.sleep(6474)
+
 # TODO: Calculate retest where we put orders
 
 # TODO: pull in pnl close - 2:04:31
@@ -62,8 +73,9 @@ pnl_close = f.pnl_close(symbol)
 # TODO: pull in sleep on close
 sleep_on_close = f.sleep_on_close(symbol, pause_time)
 
+
 # TODO: pull in kill switch
-kill_switch = f.kill_switch(symbol)
+# kill_switch = f.kill_switch(symbol)
 
 # TODO: Run bot
 def bot():
