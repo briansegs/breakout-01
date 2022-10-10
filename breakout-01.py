@@ -45,17 +45,36 @@ vol_decimal = .4
 ask, bid = f.ask_bid()
 print(f'For {symbol}... ask: {ask} | bid: {bid}')
 
-# TODO: pull in df sma - has all the data we need 1:59:44
+# TODO: pull in df sma - has all the data we need - 1:59:44
 df_sma = f.df_sma(symbol, '15m', 200, 20)
 
 # TODO: pull in open positions
-open_pos = f.open_positions(symbol)
+open_pos = f.position_data(symbol)
 
 # TODO: Add support/resist to functions
 # TODO: Pull in data:
 # TODO: Calculate support & resistance based on close
 # TODO: Calculate retest where we put orders
-# TODO: pull in pnl close
+
+# TODO: pull in pnl close - 2:04:31
+pnl_close = f.pnl_close(symbol)
+
 # TODO: pull in sleep on close
+sleep_on_close = f.sleep_on_close(symbol, pause_time)
+
 # TODO: pull in kill switch
+kill_switch = f.kill_switch(symbol)
+
 # TODO: Run bot
+def bot():
+    print('starting bot... ')
+
+# TODO: scheduling the bot
+# schedule.every(28).seconds.do(bot)
+
+# while True:
+#     try:
+#         schedule.run_pending()
+#     except:
+#         print('***maybe an internet problem, code failed... sleep 30...')
+#         time.sleep(30)
