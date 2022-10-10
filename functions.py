@@ -177,6 +177,123 @@ def is_vol_under_dec(is_long, is_open, control_dec, vol_decimal):
         vol_under_dec = None
     return vol_under_dec
 
+def get_pnl_percent(symbol):
+    '''
+    Supports pnl_close()
+    '''
+    positions = kucoin.fetch_positions()
+    index = position_data(symbol)[4]
+    position = positions[index]
+    realized_pnl = position['info']['realisedPnl']
+
+    df = pd.DataFrame(position, columns = [
+        'symbol',
+        'side',
+        'entryPrice',
+        'liquidationPrice',
+        'markPrice',
+        'collateral',
+        'realisedPnl',
+        'unrealizedPnl',
+        'percentage',
+        'leverage',
+        'contractSize'
+        ], index=[0])
+
+    size = df['contractSize'][0]
+    side = df['side'][0]
+    pnl_percent = df['percentage'][0] * 100
+
+    df['collateral'] =  round(df['collateral'], 2)
+    df['realisedPnl'] = realized_pnl
+    df['percentage'] = "{:.2%}".format(df['percentage'][0])
+
+    if side == 'long':
+        long = True
+    else:
+        long = False
+
+    print(df)
+
+    return pnl_percent, long, size
+
+def profit_flow(pnl_percent, target, symbol, pnlclose):
+    '''
+    Supports pnl_close()
+    '''
+    in_pos = True
+    print(f'for {symbol} we are in a winning position')
+    if pnl_percent > target:
+        print(':) :) we are in profit & hit target.. checking volume to see if we should close')
+        pnlclose = True
+        vol_under_dec = ob(symbol) # returns T/F
+        if vol_under_dec == True:
+            print(f'volume is under the decimal threshold we set of {vol_decimal}')
+            time.sleep(30)
+        else:
+            print(f':) :) :) starting the kill switch because we hit our target')
+            #kill_switch()
+    else:
+        print('we have not hit our target yet')
+    return in_pos, pnlclose
+
+def loss_flow(pnl_percent):
+    '''
+    Supports pnl_close()
+    '''
+    in_pos = True
+
+    if pnl_percent <= max_loss: # under -55, -56
+        print(f'we need to exit now! down {pnl_percent}... so starting the kill switch..')
+        #kill_switch()
+    else:
+        print(f'we are in a losing position of {pnl_percent}.. but chillen cause max loss')
+    return in_pos
+
+def buy_sell_flow(pnl_percent):
+    '''
+    Supports pnl_close()
+    '''
+    pnlclose = False
+    in_pos = False
+
+    if pnl_percent > 0:
+        in_pos, pnlclose = profit_flow(pnl_percent, target, symbol, pnlclose)
+    elif pnl_percent < 0:
+        in_pos = loss_flow(pnl_percent)
+    else:
+        print('we are not in position')
+
+    if in_pos == True:
+        #if breaks over .8% over 15m sma, then close pos (STOP LOSS)
+
+        timeframe = '15m'
+        df_f = df_sma(symbol, timeframe, 100, 20)
+        #df_f['sma20_15'] # last value of this
+        last_sma15 = df_f.iloc[-1][f'sma{sma}_{timeframe}']
+        last_sma15 = int(last_sma15)
+        # pull current bid
+        curr_bid = ask_bid(symbol)[1]
+        curr_bid = int(curr_bid)
+        print(f'curr_bid: {curr_bid}')
+
+        sl_val = last_sma15 * 1.008
+        print(f'sl_val: {sl_val}')
+
+#Note: Turn kill_switch() on
+
+        # 5/11 - remove the below and implementing a 55% stop loss
+            # in the pnl section
+        #if curr_bid > sl_val:
+        #    print('current bid is above stop loss value.. starting kill switch..')
+        #    kill_switch(symbol)
+        #else:
+        #    print('chillen in position..')
+    else:
+        print('we are not in position..')
+
+    return pnlclose, in_pos
+
 
 # 6:16
 def ask_bid(symbol=symbol):
@@ -386,124 +503,25 @@ def ob(symbol=symbol, vol_repeat=vol_repeat, vol_time=vol_time):
 
     return vol_under_dec
 
-
-# For Testing:
-def get_pnl_percent(symbol):
-    '''
-    Supports pnl_close()
-    '''
-    positions = kucoin.fetch_positions()
-    index = position_data(symbol)[4]
-    position = positions[index]
-    realized_pnl = position['info']['realisedPnl']
-
-    df = pd.DataFrame(position, columns = [
-        'symbol',
-        'side',
-        'entryPrice',
-        'liquidationPrice',
-        'markPrice',
-        'collateral',
-        'realisedPnl',
-        'unrealizedPnl',
-        'percentage',
-        'leverage',
-        'contractSize'
-        ], index=[0])
-
-    df['collateral'] =  round(df['collateral'], 2)
-    df['realisedPnl'] = realized_pnl
-    df['percentage'] = "{:.2%}".format(df['percentage'][0])
-
-    pnl_percent = df['percentage'][0]
-    size = df['contractSize'][0]
-    side = df['side'][0]
-
-    if side == 'long':
-        long = True
-    else:
-        long = False
-
-    print(df)
-
-    return pnl_percent, long, size
-
-# get_pnl_percent(symbol)
-
 # 1:13:40
-# pnl_close() [0] pnlclose and [1] in_pos [2]size [3]long TF
 # Notes:
-#   - Doesn't work with ccxt.kucoin
-#   - Try ccxt.kucoinfutures
+#   - Still needs work...
 def pnl_close(symbol=symbol):
     '''
-
+    Gets the pnl percent of selected symbol.
+    Buys or sells based on pnl percent logic.
+    pnl_close(symbol): if no argument, uses defaults
+    Returns: pnlclose, in_pos, size, long
     '''
     print(f'checking to see if its time to exit for {symbol}...')
 
     pnl_percent, long, size = get_pnl_percent(symbol)
 
-    pnlclose = False
-    in_pos = False
-
-    if pnl_percent > 0:
-        in_pos = True
-        print(f'for {symbol} we are in a winning position')
-        if pnl_percent > target:
-            print(':) :) we are in profit & hit target.. checking volume to see if we should close')
-            pnlclose = True
-            vol_under_dec = ob(symbol) # return TF
-            if vol_under_dec == True:
-                print(f'volume is under the decimal threshold we set of {vol_decimal}')
-                time.sleep(30)
-            else:
-                print(f':) :) :) starting the kill switch because we hit our target')
-                #kill_switch()
-        else:
-            print('we have not hit our target yet')
-    elif pnl_percent < 0: # -10, -20
-        in_pos = True
-
-        if pnl_percent <= max_loss: # under -55, -56
-            print(f'we need to exit now down {pnl_percent}... so starting the kill switch..')
-            #kill_switch()
-        else:
-            print(f'we are in a losing position of {pnl_percent}.. but chillen cause max loss')
-    else:
-        print('we are not in position')
-
-    if in_pos == True:
-        #if breaks over .8% over 15m sma, then close pos (STOP LOSS)
-
-        timeframe = '15m'
-        df_f = df_sma(symbol, timeframe, 100, 20)
-        print(df_f)
-        #df_f['sma20_15'] # last value of this
-        last_sma15 = df_f.iloc[-1][f'sma{sma}_{timeframe}']
-        last_sma15 = int(last_sma15)
-        # pull current bid
-        curr_bid = ask_bid(symbol)[1]
-        curr_bid = int(curr_bid)
-        print(curr_bid)
-
-        sl_val = last_sma15 * 1.008
-        print(sl_val)
-
-#Note: Turn kill_switch() on
-
-        # 5/11 - remove the below and implementing a 55% stop loss
-            # in the pnl section
-        #if curr_bid > sl_val:
-        #    print('current bid is above stop loss value.. starting kill switch..')
-        #    kill_switch(symbol)
-        #else:
-        #    print('chillen in position..')
-    else:
-        print('we are not in position..')
+    pnlclose, in_pos = buy_sell_flow(pnl_percent)
 
     print(f'for {symbol} just finished checking PNL close..')
 
     return pnlclose, in_pos, size, long
 
-
+pnl_close(symbol)
 # 1:29:14
