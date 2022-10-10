@@ -523,5 +523,5 @@ def pnl_close(symbol=symbol):
 
     return pnlclose, in_pos, size, long
 
-pnl_close(symbol)
+
 # 1:29:14
