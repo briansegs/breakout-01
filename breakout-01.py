@@ -59,13 +59,35 @@ open_pos = f.position_data(symbol)
 # TODO: Pull in data:
 
 # TODO: Calculate support & resistance based on close
-support = df_sma['close'].min()
-resis = df_sma['close'].max()
-print(f'support {support} | resis {resis}')
+curr_support = df_sma['close'].min()
+curr_resis = df_sma['close'].max()
+print(f'support {curr_support} | resis {curr_resis}')
+
+
+
+# TODO: Calculate retest where we put orders 2:24:00
+
+def retest():
+    '''
+    if support breaks - SHORT, place asks right below (.1% == .001)
+    if resistance breaks - LONG, place bids right above (.1% == .001)
+
+    we calc the supp/resis but if the newest bar breaks supp/resis
+    then the new min/max will change all
+    '''
+    # if bid is bigger than
+    # we need the support and resistance from last bars
+    # if last close is bigger than close before... == breaking out
+    print('creating retesting number...')
+
+    if df_sma['close'][-1] > df_sma['close'][-2]:
+        print('last close is bigger than 2nd to last')
+    else:
+        print('last close is smaller than 2nd to last')
+
+retest()
 
 time.sleep(6474)
-
-# TODO: Calculate retest where we put orders
 
 # TODO: pull in pnl close - 2:04:31
 pnl_close = f.pnl_close(symbol)
