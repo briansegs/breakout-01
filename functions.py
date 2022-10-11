@@ -21,8 +21,8 @@ max_loss = -55
 vol_decimal = .4
 
 # For dataframe:
-timeframe = '4h'
-limit = 100
+timeframe = '15m'
+limit = 289
 sma = 20
 
 index_pos = 1
@@ -61,6 +61,16 @@ def add_sma_to_dataframe(dataframe, sma, timeframe):
     dataframe.loc[sma_value > bid, 'signal'] = 'SELL'
     dataframe.loc[sma_value < bid, 'signal'] = 'BUY'
 
+    add_support_resistance(dataframe)
+
+    return dataframe
+
+def add_support_resistance(dataframe):
+    '''
+    Supports: add_sma_to_dataframe()
+    '''
+    dataframe['support'] = dataframe['close'].min()
+    dataframe['resistance'] = dataframe['close'].max()
     return dataframe
 
 def get_index(symbol):
