@@ -50,7 +50,39 @@ ask, bid = f.ask_bid()
 print(f'For {symbol}... ask: {ask} | bid: {bid}')
 
 # TODO: pull in df sma - has all the data we need - 1:59:44
-df_sma = f.df_sma(symbol, '15m', 193, 20) # 2d == 193, 3d == 289
+df_sma = f.df_sma(symbol, '15m', 289, 20) # 2d == 193, 3d == 289
+
+
+timeframe = '15m'
+limit = 289
+sma = 20
+
+def create_dataframe(symbol, timeframe, limit):
+    '''
+    Supports: df_wolast()
+    '''
+    data = kucoin.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=limit)
+    # Grabbing all but last bars
+    df_sma_wolast = pd.DataFrame(data[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+    df_sma_wolast['timestamp'] = pd.to_datetime(df_sma['timestamp'], unit='ms')
+
+    return df_sma_wolast
+
+def df_wolast(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
+    '''
+    Creates a dataframe, appends sma and trade signal columns. Returns dataframe.
+    df_sma(symbol, timeframe, limit, sma): if no argument, uses defaults
+    Returns: df_sma
+    '''
+    print('Creating Dataframe...')
+    dataframe = create_dataframe(symbol, timeframe, limit)
+
+    print('Adding SMA to Dataframe...')
+    df_wolast = f.add_sma_to_dataframe(dataframe, sma, timeframe)
+
+    print('Returning Dataframe (df_wolast)...')
+    print(df_wolast)
+    return df_wolast
 
 # TODO: pull in open positions
 open_pos = f.position_data(symbol)
@@ -67,7 +99,7 @@ print(f'support {curr_support} | resis {curr_resis}')
 
 # TODO: Calculate retest where we put orders 2:24:00
 
-def retest():
+def bot():
     '''
     if support breaks - SHORT, place asks right below (.1% == .001)
     if resistance breaks - LONG, place bids right above (.1% == .001)
@@ -88,20 +120,50 @@ def retest():
     # print(df_sma)
 
     #  already have the df and curr_support, curr_resis
-    time.sleep(1) # I could sleep for 15m
+    # time.sleep(1) # I could sleep for 15m
+
+    # DF 1 == all data - last bar
+
+    # DF 2 == last bar
+
+
     '''
     what I want is to buy on the retest
     '''
 
     # Call df again, grab support/resistance
-    df2 = f.df_sma(symbol, '15m', 289, 20)
+    # df2 = f.df_sma(symbol, '15m', 289, 20)
 
-    if df_sma['close'].iloc[-1] > df_sma['close'].iloc[-2]:
-        print('last close is bigger than 2nd to last')
-    else:
-        print('last close is smaller than 2nd to last')
+    df_sma_wolast = df_wolast(symbol)
+    # maybe we want to do this on the bid...
+    # if most current df resistance <= df_wolast:
 
-retest()
+    # 3:28:39
+    if df_sma['resistance'].iloc[-1] == df_sma_wolast['resistance'].iloc[-1]:
+        print('do nothing we are not breaking upwards...')
+    elif df_sma['support.'].iloc[-1] == df_sma_wolast['support'].iloc[-1]:
+        print('do nothing we are not breaking downwards...')
+    elif bid > df_sma['resistance'].iloc[-1]:
+        print(f'we are breaking out upwards... buy at previous resistance {curr_resis}')
+        # input buy logic
+    elif bid < df_sma['support'].iloc[-1]:
+        print(f'we are breaking down... buy at previous support {curr_support}')
+        # input sell logic
+
+
+
+    # if df_sma['close'].iloc[-1] > df_sma_wolast['close'].iloc[-1]:
+    #     print(f'the most recent bars close is bigger than the close before')
+    # else:
+    #     print(f'the most recent bars close is smaller than the close before')
+
+    # if df_sma['close'].iloc[-1] > df_sma['close'].iloc[-2]:
+    #     print('last close is bigger than 2nd to last')
+    # else:
+    #     print('last close is smaller than 2nd to last')
+    #     support_ask = df_sma['close'].iloc
+
+bot()
 
 time.sleep(6474)
 
