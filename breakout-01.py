@@ -74,13 +74,29 @@ def retest():
 
     we calc the supp/resis but if the newest bar breaks supp/resis
     then the new min/max will change all
+
+    what if I call the df again, and if it changes
     '''
     # if bid is bigger than
     # we need the support and resistance from last bars
     # if last close is bigger than close before... == breaking out
-    print('creating retesting number...')
 
-    if df_sma['close'][-1] > df_sma['close'][-2]:
+    # 2:40:00
+
+    # df_sma.loc[df_sma['close'] > bid, 'bid'] = df_sma['close'][-1]
+
+    # print(df_sma)
+
+    #  already have the df and curr_support, curr_resis
+    time.sleep(1) # I could sleep for 15m
+    '''
+    what I want is to buy on the retest
+    '''
+
+    # Call df again, grab support/resistance
+    df2 = f.df_sma(symbol, '15m', 289, 20)
+
+    if df_sma['close'].iloc[-1] > df_sma['close'].iloc[-2]:
         print('last close is bigger than 2nd to last')
     else:
         print('last close is smaller than 2nd to last')
