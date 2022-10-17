@@ -95,12 +95,6 @@ curr_support = df_sma['close'].min()
 curr_resis = df_sma['close'].max()
 print(f'support {curr_support} | resis {curr_resis}')
 
-
-
-
-
-
-
 # TODO: pull in pnl close - 2:04:31
 # pnl_close = f.pnl_close(symbol)
 
@@ -122,29 +116,65 @@ def retest():
     '''
     buy_break_out = False
     sell_break_down = False
+    breakoutprice = False
+    breakdownprice = False
 
     df_sma_wolast = df_wolast(symbol)
     # maybe we want to do this on the bid...
     # if most current df resistance <= df_wolast:
 
     # 3:28:39
-    if df_sma['resistance'].iloc[-1] == df_sma_wolast['resistance'].iloc[-1]:
-        print('do nothing we are not breaking upwards...')
-    elif df_sma['support.'].iloc[-1] == df_sma_wolast['support'].iloc[-1]:
-        print('do nothing we are not breaking downwards...')
-    elif bid > df_sma['resistance'].iloc[-1]:
+
+    if bid > df_sma['resistance'].iloc[-1]:
         print(f'we are breaking out upwards... buy at previous resistance {curr_resis}')
         # input buy logic
         buy_break_out = True
+        breakoutprice = int(df_sma['resistance'].iloc[-1]) * 1.001
     elif bid < df_sma['support'].iloc[-1]:
         print(f'we are breaking down... buy at previous support {curr_support}')
         # input sell logic
         sell_break_down = True
+        breakdownprice = int(df_sma['support'].iloc[-1]) * .999
 
-    return buy_break_out, sell_break_down
+    return buy_break_out, sell_break_down, breakoutprice, breakdownprice
 
-buy_break_out, sell_break_down = retest()
-print(f'buy_break_out: {buy_break_out} | sell_break_down: {sell_break_down}')
+
+
+def bot():
+
+    f.pnl_close()
+
+    ask, bid = f.ask_bid()
+
+    buy_break_out, sell_break_down, breakoutprice, breakdownprice = retest()
+    print(f'breakout: {buy_break_out} {round(breakoutprice, 2)} | breakdown: {sell_break_down} {round(breakdownprice, 2)}')
+
+    time.sleep(3344)
+
+    in_pos = open_pos[1]
+    curr_size = open_pos[2]
+    curr_size = int(curr_size)
+
+    curr_p = bid
+
+    print(f'symbol: {symbol} | buy_break_out: {buy_break_out} | sell_break_down: {sell_break_down} | inpos: {in_pos} | price: {curr_p}')
+
+    if (in_pos == False) and (curr_size < pos_size):
+        # kucoin.cancel_all_orders(symbol)
+        print('kucoin.cancel_all_orders(symbol)')
+        ask, bid = f.ask_bid()
+
+        if buy_break_out == True:
+            print('making an opening order as a BUY')
+        elif sell_break_down == True:
+            print('making an opening order as a SELL')
+        else:
+            print('not submitting any orders.. sleeping 1min')
+            time.sleep(60)
+    else:
+        print('we are in position already so not making any orders')
+
+bot()
 
 # TODO: scheduling the bot
 # schedule.every(28).seconds.do(bot)
