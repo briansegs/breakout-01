@@ -149,8 +149,6 @@ def bot():
     buy_break_out, sell_break_down, breakoutprice, breakdownprice = retest()
     print(f'breakout: {buy_break_out} {round(breakoutprice, 2)} | breakdown: {sell_break_down} {round(breakdownprice, 2)}')
 
-    time.sleep(3344)
-
     in_pos = open_pos[1]
     curr_size = open_pos[2]
     curr_size = int(curr_size)
@@ -164,10 +162,21 @@ def bot():
         print('kucoin.cancel_all_orders(symbol)')
         ask, bid = f.ask_bid()
 
+        # breakoutprice = retest[2]
+        # breakdownprice = retest[3]
+
         if buy_break_out == True:
             print('making an opening order as a BUY')
+            print(f'{symbol} buy order of {pos_size} submitted @ {breakoutprice}')
+            # kucoin.create_limit_buy_order(symbol, pos_size, breakoutprice, params)
+            print('order submitted so sleep for 2mins...')
+            time.sleep(120)
         elif sell_break_down == True:
             print('making an opening order as a SELL')
+            print(f'{symbol} sell order of {pos_size} submitted @ {breakdownprice}')
+            # kucoin.create_limit_sell_order(symbol, pos_size, breakdownprice, params)
+            print('order submitted so sleep for 2mins...')
+            time.sleep(120)
         else:
             print('not submitting any orders.. sleeping 1min')
             time.sleep(60)
