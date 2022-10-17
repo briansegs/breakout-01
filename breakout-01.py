@@ -183,14 +183,12 @@ def bot():
     else:
         print('we are in position already so not making any orders')
 
-bot()
 
-# TODO: scheduling the bot
-# schedule.every(28).seconds.do(bot)
+schedule.every(2).seconds.do(bot)
 
-# while True:
-#     try:
-#         schedule.run_pending()
-#     except:
-#         print('***maybe an internet problem, code failed... sleep 30...')
-#         time.sleep(30)
+while True:
+    try:
+        schedule.run_pending()
+    except:
+        print('***maybe an internet problem, code failed... sleep 30...')
+        time.sleep(30)
