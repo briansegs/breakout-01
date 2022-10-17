@@ -316,7 +316,6 @@ def ask_bid(symbol=symbol):
     bid = ob['bids'][0][0]
     ask = ob['asks'][0][0]
 
-    print(f'ask_bid: symbol: {symbol} | ask: {ask} | bid: {bid}')
     return ask, bid
 
 def get_ask(symbol=symbol):
