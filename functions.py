@@ -319,6 +319,24 @@ def ask_bid(symbol=symbol):
     print(f'ask_bid: symbol: {symbol} | ask: {ask} | bid: {bid}')
     return ask, bid
 
+def get_ask(symbol=symbol):
+    '''
+    ask_bid(symbol): if no argument, uses defaults
+    Returns: ask
+    '''
+    orderbook = kucoin.fetch_order_book(symbol)
+    ask = orderbook['asks'][0][0]
+    return ask
+
+def get_bid(symbol=symbol):
+    '''
+    ask_bid(symbol): if no argument, uses defaults
+    Returns: ask
+    '''
+    orderbook = kucoin.fetch_order_book(symbol)
+    bid = orderbook['bids'][0][0]
+    return bid
+
 # 25:00
 def df_sma(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     '''
