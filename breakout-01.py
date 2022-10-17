@@ -9,10 +9,8 @@ on retest place orders
 '''
 
 import ccxt
-import json
 import pandas as pd
 import config as c
-from datetime import date, datetime, timezone, tzinfo
 import time, schedule
 import functions as f
 
@@ -25,37 +23,21 @@ kucoin = ccxt.kucoinfutures({
 
 # Params:
 symbol = 'XBTUSDTM'
-index_pos = 0 # Change based on what asset
 
 pos_size = 10 # 125, 75,
 target = 9 # % gain I want
 max_loss = -8
 
-# Time between trades
-pause_time = 10
-
-# For volume calc
-# vol_repeat * vol_time == TIME of volume collection
-vol_repeat = 11
-vol_time = 5
-
-
 params = {'timeInForce': 'PostOnly'}
-vol_decimal = .4
-
-# 1:50:21
-
-# TODO: pull in ask and bid
-ask, bid = f.ask_bid()
-print(f'For {symbol}... ask: {ask} | bid: {bid}')
-
-# TODO: pull in df sma - has all the data we need - 1:59:44
-df_sma = f.df_sma(symbol, '15m', 289, 20) # 2d == 193, 3d == 289
-
 
 timeframe = '15m'
 limit = 289
 sma = 20
+
+# 1:59:44
+df_sma = f.df_sma(symbol, '15m', 289, 20) # 2d == 193, 3d == 289
+
+bid = f.ask_bid()[1]
 
 def create_dataframe(symbol, timeframe, limit):
     '''
@@ -80,33 +62,21 @@ def df_wolast(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     print('Adding SMA to Dataframe...')
     df_wolast = f.add_sma_to_dataframe(dataframe, sma, timeframe)
 
-    print('Returning Dataframe (df_wolast)...')
-    print(df_wolast)
     return df_wolast
 
-# TODO: pull in open positions
 open_pos = f.position_data(symbol)
 
-# TODO: Add support/resist to functions
-# TODO: Pull in data:
-
-# TODO: Calculate support & resistance based on close
 curr_support = df_sma['close'].min()
 curr_resis = df_sma['close'].max()
 print(f'support {curr_support} | resis {curr_resis}')
 
-# TODO: pull in pnl close - 2:04:31
-# pnl_close = f.pnl_close(symbol)
-
 # TODO: pull in sleep on close
 # sleep_on_close = f.sleep_on_close(symbol, pause_time)
-
 
 # TODO: pull in kill switch
 # kill_switch = f.kill_switch(symbol)
 
-# TODO: Run bot
-# TODO: Calculate retest where we put orders 2:24:00
+# 2:24:00
 
 def retest():
     print('creating retest number...')
@@ -120,28 +90,22 @@ def retest():
     breakdownprice = False
 
     df_sma_wolast = df_wolast(symbol)
-    # maybe we want to do this on the bid...
-    # if most current df resistance <= df_wolast:
 
     # 3:28:39
 
-    if bid > df_sma['resistance'].iloc[-1]:
+    if bid > df_sma_wolast['resistance'].iloc[-1]:
         print(f'we are breaking out upwards... buy at previous resistance {curr_resis}')
-        # input buy logic
         buy_break_out = True
         breakoutprice = int(df_sma['resistance'].iloc[-1]) * 1.001
-    elif bid < df_sma['support'].iloc[-1]:
+
+    elif bid < df_sma_wolast['support'].iloc[-1]:
         print(f'we are breaking down... buy at previous support {curr_support}')
-        # input sell logic
         sell_break_down = True
         breakdownprice = int(df_sma['support'].iloc[-1]) * .999
 
     return buy_break_out, sell_break_down, breakoutprice, breakdownprice
 
-
-
 def bot():
-
     f.pnl_close()
 
     ask, bid = f.ask_bid()
@@ -157,13 +121,13 @@ def bot():
 
     print(f'symbol: {symbol} | buy_break_out: {buy_break_out} | sell_break_down: {sell_break_down} | inpos: {in_pos} | price: {curr_p}')
 
-    if (in_pos == False) and (curr_size < pos_size):
+    if in_pos == False and curr_size < pos_size:
         # kucoin.cancel_all_orders(symbol)
         print('kucoin.cancel_all_orders(symbol)')
         ask, bid = f.ask_bid()
 
-        # breakoutprice = retest[2]
-        # breakdownprice = retest[3]
+        breakoutprice = retest[2]
+        breakdownprice = retest[3]
 
         if buy_break_out == True:
             print('making an opening order as a BUY')
@@ -184,7 +148,7 @@ def bot():
         print('we are in position already so not making any orders')
 
 
-schedule.every(2).seconds.do(bot)
+schedule.every(28).seconds.do(bot)
 
 while True:
     try:
