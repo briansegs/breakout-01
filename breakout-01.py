@@ -97,42 +97,31 @@ print(f'support {curr_support} | resis {curr_resis}')
 
 
 
+
+
+
+
+# TODO: pull in pnl close - 2:04:31
+# pnl_close = f.pnl_close(symbol)
+
+# TODO: pull in sleep on close
+# sleep_on_close = f.sleep_on_close(symbol, pause_time)
+
+
+# TODO: pull in kill switch
+# kill_switch = f.kill_switch(symbol)
+
+# TODO: Run bot
 # TODO: Calculate retest where we put orders 2:24:00
 
-def bot():
+def retest():
+    print('creating retest number...')
     '''
     if support breaks - SHORT, place asks right below (.1% == .001)
     if resistance breaks - LONG, place bids right above (.1% == .001)
-
-    we calc the supp/resis but if the newest bar breaks supp/resis
-    then the new min/max will change all
-
-    what if I call the df again, and if it changes
     '''
-    # if bid is bigger than
-    # we need the support and resistance from last bars
-    # if last close is bigger than close before... == breaking out
-
-    # 2:40:00
-
-    # df_sma.loc[df_sma['close'] > bid, 'bid'] = df_sma['close'][-1]
-
-    # print(df_sma)
-
-    #  already have the df and curr_support, curr_resis
-    # time.sleep(1) # I could sleep for 15m
-
-    # DF 1 == all data - last bar
-
-    # DF 2 == last bar
-
-
-    '''
-    what I want is to buy on the retest
-    '''
-
-    # Call df again, grab support/resistance
-    # df2 = f.df_sma(symbol, '15m', 289, 20)
+    buy_break_out = False
+    sell_break_down = False
 
     df_sma_wolast = df_wolast(symbol)
     # maybe we want to do this on the bid...
@@ -146,40 +135,16 @@ def bot():
     elif bid > df_sma['resistance'].iloc[-1]:
         print(f'we are breaking out upwards... buy at previous resistance {curr_resis}')
         # input buy logic
+        buy_break_out = True
     elif bid < df_sma['support'].iloc[-1]:
         print(f'we are breaking down... buy at previous support {curr_support}')
         # input sell logic
+        sell_break_down = True
 
+    return buy_break_out, sell_break_down
 
-
-    # if df_sma['close'].iloc[-1] > df_sma_wolast['close'].iloc[-1]:
-    #     print(f'the most recent bars close is bigger than the close before')
-    # else:
-    #     print(f'the most recent bars close is smaller than the close before')
-
-    # if df_sma['close'].iloc[-1] > df_sma['close'].iloc[-2]:
-    #     print('last close is bigger than 2nd to last')
-    # else:
-    #     print('last close is smaller than 2nd to last')
-    #     support_ask = df_sma['close'].iloc
-
-bot()
-
-time.sleep(6474)
-
-# TODO: pull in pnl close - 2:04:31
-pnl_close = f.pnl_close(symbol)
-
-# TODO: pull in sleep on close
-sleep_on_close = f.sleep_on_close(symbol, pause_time)
-
-
-# TODO: pull in kill switch
-# kill_switch = f.kill_switch(symbol)
-
-# TODO: Run bot
-def bot():
-    print('starting bot... ')
+buy_break_out, sell_break_down = retest()
+print(f'buy_break_out: {buy_break_out} | sell_break_down: {sell_break_down}')
 
 # TODO: scheduling the bot
 # schedule.every(28).seconds.do(bot)
