@@ -35,10 +35,14 @@ limit = 289
 sma = 20
 
 # 1:59:44
+# TODO: make get functions for support and resistance
 df_sma = f.df_sma(symbol, '15m', 289, 20) # 2d == 193, 3d == 289
 
-bid = f.ask_bid()[1]
+curr_support = df_sma['close'].min()
+curr_resis = df_sma['close'].max()
+print(f'support {curr_support} | resis {curr_resis}')
 
+# TODO: I think this can be better (rework)
 def create_dataframe(symbol, timeframe, limit):
     '''
     Supports: df_wolast()
@@ -46,7 +50,7 @@ def create_dataframe(symbol, timeframe, limit):
     data = kucoin.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=limit)
     # Grabbing all but last bars
     df_sma_wolast = pd.DataFrame(data[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-    df_sma_wolast['timestamp'] = pd.to_datetime(df_sma['timestamp'], unit='ms')
+    df_sma_wolast['timestamp'] = pd.to_datetime(df_sma_wolast['timestamp'], unit='ms')
 
     return df_sma_wolast
 
@@ -63,12 +67,6 @@ def df_wolast(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
     df_wolast = f.add_sma_to_dataframe(dataframe, sma, timeframe)
 
     return df_wolast
-
-open_pos = f.position_data(symbol)
-
-curr_support = df_sma['close'].min()
-curr_resis = df_sma['close'].max()
-print(f'support {curr_support} | resis {curr_resis}')
 
 # TODO: pull in sleep on close
 # sleep_on_close = f.sleep_on_close(symbol, pause_time)
@@ -90,23 +88,25 @@ def retest():
     breakdownprice = False
 
     df_sma_wolast = df_wolast(symbol)
+    bid = f.ask_bid()[1]
 
     # 3:28:39
 
     if bid > df_sma_wolast['resistance'].iloc[-1]:
         print(f'we are breaking out upwards... buy at previous resistance {curr_resis}')
         buy_break_out = True
-        breakoutprice = int(df_sma['resistance'].iloc[-1]) * 1.001
+        breakoutprice = int(df_sma_wolast['resistance'].iloc[-1]) * 1.001
 
     elif bid < df_sma_wolast['support'].iloc[-1]:
         print(f'we are breaking down... buy at previous support {curr_support}')
         sell_break_down = True
-        breakdownprice = int(df_sma['support'].iloc[-1]) * .999
+        breakdownprice = int(df_sma_wolast['support'].iloc[-1]) * .999
 
     return buy_break_out, sell_break_down, breakoutprice, breakdownprice
 
 def bot():
     f.pnl_close()
+    open_pos = f.position_data(symbol)
 
     ask, bid = f.ask_bid()
 
