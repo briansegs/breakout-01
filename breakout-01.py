@@ -7,11 +7,13 @@ on retest place orders
 'XBTUSDTM'
 1:41:55
 '''
-
+# TODO: lets import just the functions we need
 import ccxt
+# TODO: lets import just the functions we need
 import pandas as pd
 import config as c
 import time, schedule
+# TODO: lets import just the functions we need
 import functions as f
 
 kucoin = ccxt.kucoinfutures({
@@ -20,7 +22,8 @@ kucoin = ccxt.kucoinfutures({
     'secret': c.kc_futures['API_SECRET'],
     'password': c.kc_futures['API_PASSPHRASE'],
 })
-
+# TODO: what params do i really need here?
+# TODO: how should I work out passing arguments? when to use defaults?
 # Params:
 symbol = 'XBTUSDTM'
 
@@ -43,6 +46,8 @@ curr_resis = df_sma['close'].max()
 print(f'support {curr_support} | resis {curr_resis}')
 
 # TODO: I think this can be better (rework)
+# TODO: see if we can get these into one function
+# TODO: lets see if we can move this to the functions.py file
 def create_dataframe(symbol, timeframe, limit):
     '''
     Supports: df_wolast()
@@ -77,6 +82,7 @@ def df_wolast(symbol=symbol, timeframe=timeframe, limit=limit, sma=sma):
 # 2:24:00
 
 def retest():
+    # TODO: do i need this print statment?
     print('creating retest number...')
     '''
     if support breaks - SHORT, place asks right below (.1% == .001)
@@ -84,20 +90,23 @@ def retest():
     '''
     buy_break_out = False
     sell_break_down = False
+    # TODO: does it make more sense to init "breakoutprice" & "breakdownprice" with 0 instead of False?
     breakoutprice = False
     breakdownprice = False
-
+    # TODO: is there a better way to name this?
     df_sma_wolast = df_wolast(symbol)
-    bid = f.ask_bid()[1]
+    bid = f.get_bid(symbol)
 
     # 3:28:39
 
     if bid > df_sma_wolast['resistance'].iloc[-1]:
+        # TODO: do i need this statment? if so make this print statment more meaningful
         print(f'we are breaking out upwards... buy at previous resistance {curr_resis}')
         buy_break_out = True
         breakoutprice = int(df_sma_wolast['resistance'].iloc[-1]) * 1.001
 
     elif bid < df_sma_wolast['support'].iloc[-1]:
+        # TODO: do i need this statment? if so make this print statment more meaningful
         print(f'we are breaking down... buy at previous support {curr_support}')
         sell_break_down = True
         breakdownprice = int(df_sma_wolast['support'].iloc[-1]) * .999
@@ -105,37 +114,43 @@ def retest():
     return buy_break_out, sell_break_down, breakoutprice, breakdownprice
 
 def bot():
+    # TODO: I want to look at reducing the print statments. They are too messy to understand easily
+    # TODO: I want to keep all the print statments or as many as make sense in this function
     f.pnl_close()
-    open_pos = f.position_data(symbol)
-
-    ask, bid = f.ask_bid()
-
+    position_data = f.position_data(symbol)
+    bid = f.get_bid(symbol)
+    # TODO: this is just being used for print statments
     buy_break_out, sell_break_down, breakoutprice, breakdownprice = retest()
+    # TODO: do I need this print statment?
     print(f'breakout: {buy_break_out} {round(breakoutprice, 2)} | breakdown: {sell_break_down} {round(breakdownprice, 2)}')
 
-    in_pos = open_pos[1]
-    curr_size = open_pos[2]
+    in_pos = position_data[1]
+    # TODO: can I put int on position_data[2] instead?
+    curr_size = position_data[2]
     curr_size = int(curr_size)
-
+    # TODO: this is redundant. assign curr_p(current price) above to bid = f.get_bid(symbol)
     curr_p = bid
-
+    # TODO: do I need this print statment
     print(f'symbol: {symbol} | buy_break_out: {buy_break_out} | sell_break_down: {sell_break_down} | inpos: {in_pos} | price: {curr_p}')
 
-    if in_pos == False and curr_size < pos_size:
+    # TODO: do I need () below? look into it
+    # TODO: I don't think that position size will for for me using Kucoin. Figure out a better way of doing this
+    if (in_pos == False) and (curr_size < pos_size):
         # kucoin.cancel_all_orders(symbol)
         print('kucoin.cancel_all_orders(symbol)')
-        ask, bid = f.ask_bid()
-
+        # TODO: can or should I use the calls above instead of calling them again in this if statment
         breakoutprice = retest[2]
         breakdownprice = retest[3]
-
+        # TODO: why do we use buy_break_out from out of this if statment and say "breakoutprice" from inside the if statment?
         if buy_break_out == True:
+            # TODO: can we clean up these print statments so they feel more meaningful?
             print('making an opening order as a BUY')
             print(f'{symbol} buy order of {pos_size} submitted @ {breakoutprice}')
             # kucoin.create_limit_buy_order(symbol, pos_size, breakoutprice, params)
             print('order submitted so sleep for 2mins...')
             time.sleep(120)
         elif sell_break_down == True:
+            # TODO: can we clean up these print statments so they feel more meaningful?
             print('making an opening order as a SELL')
             print(f'{symbol} sell order of {pos_size} submitted @ {breakdownprice}')
             # kucoin.create_limit_sell_order(symbol, pos_size, breakdownprice, params)
